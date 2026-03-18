@@ -1,0 +1,24 @@
+# PyCharm
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 项目特定（如果有）
+node_modules/
+dist/
+build/
+*.log
