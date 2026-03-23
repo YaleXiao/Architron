@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from utils.llm_client import LLMClient, TextBlock, ToolUseBlock
 from utils.tool_runner import ToolRunner
 from utils.rag import RAG
@@ -14,6 +15,8 @@ from config import (
     RAG_FORCE_REINDEX,
     SYSTEM_PROMPT,
 )
+
+logger = logging.getLogger("architron")
 
 
 def content_to_openai_message(content: list) -> dict:
@@ -110,17 +113,24 @@ class SubAgent:
                 break
             messages.append({"role": "user", "content": user_input})
             while True:
-                print("Agent: ", end="", flush=True)
                 response = self.llm_client.create(
                     messages,
                     tools=TOOLS,
                     system=SYSTEM_PROMPT,
-                    on_stream=lambda text: print(text, end="", flush=True),
+                    on_stream=None,  # Disable streaming to avoid showing JSON
                 )
-                print()
+                if response["stop_reason"] == "tool_use":
+                    # Don't show any output for tool use, just execute silently
+                    pass
+                else:
+                    print("Agent: ", end="", flush=True)
+                    if response.get("text"):
+                        print(response["text"], end="", flush=True)
+                    print()
                 if response["stop_reason"] == "tool_use":
                     tool_results = await self.tool_runner.run_all(response["content"])
                     messages.append(content_to_openai_message(response["content"]))
+                    logger.debug(f"[Agent] Tool results: {tool_results}")
                     for result in tool_results:
                         messages.append(
                             {
@@ -129,9 +139,10 @@ class SubAgent:
                                 "content": result["content"],
                             }
                         )
+                    logger.debug(f"[Agent] Messages after tool: {len(messages)}")
                 else:
+                    messages.append({"role": "assistant", "content": response["text"]})
                     break
-            messages.append({"role": "assistant", "content": response["text"]})
 
     def capability(self) -> AgentCapability:
         skills = (

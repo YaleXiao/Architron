@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger("architron")
+
+
 class ToolRunner:
     def __init__(self, session):
         self._session = session
@@ -29,8 +34,17 @@ class ToolRunner:
                 "is_error": True,
             }
         try:
+            logger.debug(
+                f"[ToolRunner] Calling tool {block.name} with input: {block.input}"
+            )
+            logger.debug(f"[ToolRunner] Input type: {type(block.input)}")
+            if isinstance(block.input, dict):
+                logger.debug(f"[ToolRunner] Input keys: {list(block.input.keys())}")
+                if "code" in block.input:
+                    logger.debug(f"[ToolRunner] Code to execute: {block.input['code']}")
             resp = await session.call_tool(block.name, block.input)
             content = resp.content[0].text if resp.content else ""
+            logger.debug(f"[ToolRunner] Tool {block.name} returned: {content}")
             self._artifacts[block.id] = content
             return {
                 "type": "tool_result",
@@ -38,6 +52,28 @@ class ToolRunner:
                 "content": content,
             }
         except Exception as e:
+            logger.error(f"[ToolRunner] Error calling tool {block.name}: {e}")
+            return {
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": str(e),
+                "is_error": True,
+            }
+        try:
+            logger.debug(
+                f"[ToolRunner] Calling tool {block.name} with input: {block.input}"
+            )
+            resp = await session.call_tool(block.name, block.input)
+            content = resp.content[0].text if resp.content else ""
+            logger.debug(f"[ToolRunner] Tool {block.name} returned: {content}")
+            self._artifacts[block.id] = content
+            return {
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": content,
+            }
+        except Exception as e:
+            logger.error(f"[ToolRunner] Error calling tool {block.name}: {e}")
             return {
                 "type": "tool_result",
                 "tool_use_id": block.id,

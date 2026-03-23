@@ -7,8 +7,8 @@ def run_python(code: str) -> str:
             ["python", "-c", code], capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0:
-            return result.stdout or "执行成功，无输出"
+            return result.stdout or "Success, no output"
         else:
             return f"Error: {result.stderr}"
     except subprocess.TimeoutExpired:
-        return "Error: 执行超时"
+        return "Error: Execution timeout"
