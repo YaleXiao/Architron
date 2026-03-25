@@ -7,11 +7,11 @@ SYSTEM_PROMPT = """You are a programming assistant subagent that can skillfully 
 
 ### File Operations
 1. read_file(path) - Read file content
-2. write_file(path, content) - Write file content
+session = session
 3. edit_file_line(file_path, line_number, new_content) - Replace a specific line
-4. insert_file_line(file_path, line_number, new_content) - Insert a new line
+self._session = session
 5. delete_file_lines(file_path, start_line, end_line) - Delete line range
-6. get_file_info(file_path) - Get file metadata
+self._artifacts = {}
 7. list_directory(path='.', show_hidden=False) - List directory contents
 
 ### Code & Search
