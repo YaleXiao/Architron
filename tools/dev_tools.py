@@ -11,7 +11,7 @@ def grep_search(
         results = []
         search_path = Path(path) if os.path.isabs(path) else Path(".") / path
         if not search_path.exists():
-            return f"Error: Path '{path}' does not exist"
+            return f"ERROR: Path '{path}' does not exist"
 
         if not case_sensitive:
             pattern = pattern.lower()
@@ -44,7 +44,7 @@ def grep_search(
 
         return f"Found {len(results)} matches:\n\n" + "\n".join(results[:50])
     except Exception as e:
-        return f"Error during search: {str(e)}"
+        return f"ERROR during search: {str(e)}"
 
 
 def glob_files(pattern: str, path: str = ".") -> str:
@@ -52,7 +52,7 @@ def glob_files(pattern: str, path: str = ".") -> str:
     try:
         search_path = Path(path)
         if not search_path.exists():
-            return f"Error: Path '{path}' does not exist"
+            return f"ERROR: Path '{path}' does not exist"
 
         results = list(search_path.rglob(pattern))
         if not results:
@@ -62,7 +62,7 @@ def glob_files(pattern: str, path: str = ".") -> str:
             [str(p) for p in results[:100]]
         )
     except Exception as e:
-        return f"Error during glob: {str(e)}"
+        return f"ERROR during glob: {str(e)}"
 
 
 def run_bash(command: str, timeout: int = 30) -> str:
@@ -87,9 +87,9 @@ def run_bash(command: str, timeout: int = 30) -> str:
             else "Command executed successfully (no output)"
         )
     except subprocess.TimeoutExpired:
-        return f"Error: Command timed out after {timeout} seconds"
+        return f"ERROR: Command timed out after {timeout} seconds"
     except Exception as e:
-        return f"Error executing command: {str(e)}"
+        return f"ERROR executing command: {str(e)}"
 
 
 def edit_file_line(file_path: str, line_number: int, new_content: str) -> str:
@@ -97,13 +97,13 @@ def edit_file_line(file_path: str, line_number: int, new_content: str) -> str:
     try:
         path = Path(file_path)
         if not path.exists():
-            return f"Error: File '{file_path}' does not exist"
+            return f"ERROR: File '{file_path}' does not exist"
 
         with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         if line_number < 1 or line_number > len(lines):
-            return f"Error: Line number {line_number} out of range (file has {len(lines)} lines)"
+            return f"ERROR: Line number {line_number} out of range (file has {len(lines)} lines)"
 
         lines[line_number - 1] = new_content + "\n"
 
@@ -112,7 +112,7 @@ def edit_file_line(file_path: str, line_number: int, new_content: str) -> str:
 
         return f"Successfully replaced line {line_number}"
     except Exception as e:
-        return f"Error editing file: {str(e)}"
+        return f"ERROR editing file: {str(e)}"
 
 
 def insert_file_line(file_path: str, line_number: int, new_content: str) -> str:
@@ -120,13 +120,13 @@ def insert_file_line(file_path: str, line_number: int, new_content: str) -> str:
     try:
         path = Path(file_path)
         if not path.exists():
-            return f"Error: File '{file_path}' does not exist"
+            return f"ERROR: File '{file_path}' does not exist"
 
         with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         if line_number < 1 or line_number > len(lines) + 1:
-            return f"Error: Line number {line_number} out of range (file has {len(lines)} lines)"
+            return f"ERROR: Line number {line_number} out of range (file has {len(lines)} lines)"
 
         lines.insert(line_number - 1, new_content + "\n")
 
@@ -135,7 +135,7 @@ def insert_file_line(file_path: str, line_number: int, new_content: str) -> str:
 
         return f"Successfully inserted line at position {line_number}"
     except Exception as e:
-        return f"Error inserting line: {str(e)}"
+        return f"ERROR inserting line: {str(e)}"
 
 
 def delete_file_lines(file_path: str, start_line: int, end_line: int) -> str:
@@ -143,13 +143,13 @@ def delete_file_lines(file_path: str, start_line: int, end_line: int) -> str:
     try:
         path = Path(file_path)
         if not path.exists():
-            return f"Error: File '{file_path}' does not exist"
+            return f"ERROR: File '{file_path}' does not exist"
 
         with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         if start_line < 1 or end_line > len(lines):
-            return f"Error: Line range ({start_line}-{end_line}) out of range (file has {len(lines)} lines)"
+            return f"ERROR: Line range ({start_line}-{end_line}) out of range (file has {len(lines)} lines)"
 
         del lines[start_line - 1 : end_line]
 
@@ -158,7 +158,7 @@ def delete_file_lines(file_path: str, start_line: int, end_line: int) -> str:
 
         return f"Successfully deleted lines {start_line}-{end_line}"
     except Exception as e:
-        return f"Error deleting lines: {str(e)}"
+        return f"ERROR deleting lines: {str(e)}"
 
 
 def get_file_info(file_path: str) -> str:
@@ -166,7 +166,7 @@ def get_file_info(file_path: str) -> str:
     try:
         path = Path(file_path)
         if not path.exists():
-            return f"Error: File '{file_path}' does not exist"
+            return f"ERROR: File '{file_path}' does not exist"
 
         stat = path.stat()
         info = [
@@ -178,7 +178,7 @@ def get_file_info(file_path: str) -> str:
 
         return "\n".join(info)
     except Exception as e:
-        return f"Error getting file info: {str(e)}"
+        return f"ERROR getting file info: {str(e)}"
 
 
 def list_directory(path: str = ".", show_hidden: bool = False) -> str:
@@ -186,9 +186,9 @@ def list_directory(path: str = ".", show_hidden: bool = False) -> str:
     try:
         dir_path = Path(path)
         if not dir_path.exists():
-            return f"Error: Directory '{path}' does not exist"
+            return f"ERROR: Directory '{path}' does not exist"
         if not dir_path.is_dir():
-            return f"Error: '{path}' is not a directory"
+            return f"ERROR: '{path}' is not a directory"
 
         items = []
         for item in sorted(dir_path.iterdir()):
@@ -201,4 +201,4 @@ def list_directory(path: str = ".", show_hidden: bool = False) -> str:
 
         return f"Contents of '{path}':\n\n" + "\n".join(items)
     except Exception as e:
-        return f"Error listing directory: {str(e)}"
+        return f"ERROR listing directory: {str(e)}"

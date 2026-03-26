@@ -3,12 +3,12 @@ import os
 
 def read_file(path: str) -> str:
     if not os.path.exists(path):
-        return f"Error: file not found: {path}"
+        return f"ERROR: file not found: {path}"
     try:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
-        return f"Error: {e}"
+        return f"ERROR: {e}"
 
 
 def write_file(path: str, content: str) -> str:
@@ -18,4 +18,4 @@ def write_file(path: str, content: str) -> str:
             f.write(content)
         return f"Success: wrote {len(content)} chars to {path}"
     except Exception as e:
-        return f"Error: {e}"
+        return f"ERROR: {e}"

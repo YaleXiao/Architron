@@ -9,6 +9,6 @@ def run_python(code: str) -> str:
         if result.returncode == 0:
             return result.stdout or "Success, no output"
         else:
-            return f"Error: {result.stderr}"
+            return f"ERROR: {result.stderr}"
     except subprocess.TimeoutExpired:
-        return "Error: Execution timeout"
+        return "ERROR: Execution timeout"

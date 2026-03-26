@@ -6,9 +6,6 @@ from utils.tool_runner import ToolRunner
 from utils.rag import RAG
 from utils.schema import TaskInput, TaskOutput, AgentCapability
 from config import (
-    CONFIG,
-    PROVIDER,
-    TOOLS,
     RAG_DIRECTORIES,
     RAG_EXTENSIONS,
     RAG_EXCLUDE,
@@ -67,12 +64,15 @@ class SubAgent:
                     )
 
             MAX_ITERATIONS = 10
+            tool_call_count = {}
+            last_response = None
             for _ in range(MAX_ITERATIONS):
                 # 使用动态获取的工具配置
                 tools_config = self.tool_runner.get_tools_config()
                 response = self.llm_client.create(
                     messages, tools=tools_config, system=SYSTEM_PROMPT
                 )
+                last_response = response
                 if response["stop_reason"] == "end_turn":
                     return TaskOutput(
                         task_id=task_input.task_id,
@@ -81,9 +81,36 @@ class SubAgent:
                         artifacts=self.tool_runner.get_artifacts(),
                     )
                 elif response["stop_reason"] == "tool_use":
+                    # 检查工具调用
                     tool_results = await self.tool_runner.run_all(response["content"])
                     messages.append(content_to_openai_message(response["content"]))
+                    
+                    # 处理工具结果
+                    has_error = False
                     for result in tool_results:
+                        # 记录工具调用次数
+                        tool_name = None
+                        for block in response["content"]:
+                            if block.type == "tool_use" and block.id == result["tool_use_id"]:
+                                tool_name = block.name
+                                break
+                        
+                        if tool_name:
+                            tool_call_count[tool_name] = tool_call_count.get(tool_name, 0) + 1
+                            # 检查是否超过最大调用次数
+                            if tool_call_count[tool_name] > 3:
+                                # 超过限制，终止循环
+                                return TaskOutput(
+                                    task_id=task_input.task_id,
+                                    status="error",
+                                    result=f"Tool {tool_name} called too many times (max 3)",
+                                    artifacts=self.tool_runner.get_artifacts(),
+                                )
+                        
+                        # 检查是否有错误
+                        if result.get("is_error", False):
+                            has_error = True
+                        
                         messages.append(
                             {
                                 "role": "tool",
@@ -91,14 +118,40 @@ class SubAgent:
                                 "content": result["content"],
                             }
                         )
+                    
+                    # 如果有错误，添加错误处理提示
+                    if has_error:
+                        messages.append({
+                            "role": "user",
+                            "content": "The previous tool call failed. Please analyze the error and try a different approach. Do NOT retry the same tool with the same arguments."
+                        })
                 else:
-                    break
-            return TaskOutput(
-                task_id=task_input.task_id,
-                status="error",
-                result="Max iterations exceeded",
-                artifacts=self.tool_runner.get_artifacts(),
-            )
+                    # 其他停止原因，检查是否有文本输出
+                    if response.get("text"):
+                        return TaskOutput(
+                            task_id=task_input.task_id,
+                            status="done",
+                            result=response["text"],
+                            artifacts=self.tool_runner.get_artifacts(),
+                        )
+                    else:
+                        break
+            # 循环结束，检查最后一次响应
+            if last_response and last_response.get("text"):
+                return TaskOutput(
+                    task_id=task_input.task_id,
+                    status="done",
+                    result=last_response["text"],
+                    artifacts=self.tool_runner.get_artifacts(),
+                )
+            else:
+                # 真正的循环次数超过限制
+                return TaskOutput(
+                    task_id=task_input.task_id,
+                    status="error",
+                    result="Max iterations exceeded",
+                    artifacts=self.tool_runner.get_artifacts(),
+                )
         except Exception as e:
             return TaskOutput(
                 task_id=task_input.task_id,
@@ -117,7 +170,7 @@ class SubAgent:
             task_input = TaskInput(
                 task_id="chat",
                 instruction=user_input,
-                use_rag=True  # Enable RAG by default
+                use_rag=False  # Enable RAG by default
             )
             # Use run method to process input with RAG
             output = await self.run(task_input)
