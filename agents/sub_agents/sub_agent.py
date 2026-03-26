@@ -68,8 +68,10 @@ class SubAgent:
 
             MAX_ITERATIONS = 10
             for _ in range(MAX_ITERATIONS):
+                # 使用动态获取的工具配置
+                tools_config = self.tool_runner.get_tools_config()
                 response = self.llm_client.create(
-                    messages, tools=TOOLS, system=SYSTEM_PROMPT
+                    messages, tools=tools_config, system=SYSTEM_PROMPT
                 )
                 if response["stop_reason"] == "end_turn":
                     return TaskOutput(
@@ -111,38 +113,18 @@ class SubAgent:
             user_input = input("You: ")
             if user_input.lower() == "quit":
                 break
+            # Create TaskInput with RAG enabled by default
+            task_input = TaskInput(
+                task_id="chat",
+                instruction=user_input,
+                use_rag=True  # Enable RAG by default
+            )
+            # Use run method to process input with RAG
+            output = await self.run(task_input)
+            print("Agent: ", output.result)
+            # Maintain message history
             messages.append({"role": "user", "content": user_input})
-            while True:
-                response = self.llm_client.create(
-                    messages,
-                    tools=TOOLS,
-                    system=SYSTEM_PROMPT,
-                    on_stream=None,  # Disable streaming to avoid showing JSON
-                )
-                if response["stop_reason"] == "tool_use":
-                    # Don't show any output for tool use, just execute silently
-                    pass
-                else:
-                    print("Agent: ", end="", flush=True)
-                    if response.get("text"):
-                        print(response["text"], end="", flush=True)
-                    print()
-                if response["stop_reason"] == "tool_use":
-                    tool_results = await self.tool_runner.run_all(response["content"])
-                    messages.append(content_to_openai_message(response["content"]))
-                    logger.debug(f"[Agent] Tool results: {tool_results}")
-                    for result in tool_results:
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "tool_call_id": result["tool_use_id"],
-                                "content": result["content"],
-                            }
-                        )
-                    logger.debug(f"[Agent] Messages after tool: {len(messages)}")
-                else:
-                    messages.append({"role": "assistant", "content": response["text"]})
-                    break
+            messages.append({"role": "assistant", "content": output.result})
 
     def capability(self) -> AgentCapability:
         skills = (
